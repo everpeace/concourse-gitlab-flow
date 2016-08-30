@@ -22,7 +22,8 @@ CURRENT_BRANCH=$(git branch --contains | grep -v '('| sed 's/^\**[[:blank:]]*//g
 echo "current branch:${CURRENT_BRANCH}"
 
 MESSAGE="${MESSAGE:-[Concourse CI] Merge branch ${TARGET_BRANCH} into ${CURRENT_BRANCH}}"
-if [ "$CI_SKIP" = "true" ]; then
+
+if [ "${CI_SKIP}" = "true" ]; then
   MESSAGE="[ci skip]${MESSAGE}"
 fi
 
@@ -32,4 +33,6 @@ else
   MERGE_MODE="--ff"
 fi
 
+echo "MESSAGE=${MESSAGE}"
+echo "MERGE_MODE=${MERGE_MODE}"
 git merge ${MERGE_MODE} "repo-target/${TARGET_BRANCH}" -m "${MESSAGE}"
