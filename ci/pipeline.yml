@@ -85,12 +85,12 @@ resources:
       branch: develop
       private_key: {{github-private-key}}
 
-  - name: repo-master-push
-    type: git
-    source:
-      uri: {{github-repo-uri}}
-      branch: master
-      private_key: {{github-private-key}}
+  # - name: repo-master-push
+  #   type: git
+  #   source:
+  #     uri: {{github-repo-uri}}
+  #     branch: master
+  #     private_key: {{github-private-key}}
 
 jobs:
   # testing pull requests
@@ -201,30 +201,30 @@ jobs:
 
   - name: promote-rc-to-master
     serial: true
-    serial_groups: [ repo-master ]
     plan:
       - aggregate:
         - get: repo-rc
         - get: repo-master
+        # - get: repo-master-push
       - task: merge-rc-to-master
         file: repo-rc/ci/tasks/merge-rc-to-master.yml
         params:
           GIT_EMAIL: {{git-email}}
           GIT_NAME: {{git-name}}
           NO_FF: true
-      - put: repo-master-push
-        resource: repo-master-push
+      - put: repo-master
+        resource: repo-master
         params:
           repository: out
 
   - name: ship-master-to-prod
     serial: true
-    serial_groups: [ repo-master, develop-version, version ]
+    serial_groups: [ develop-version, version ]
     disable_manual_trigger: true
     plan:
       - aggregate:
         - get: repo
-          resource: repo-master-push
+          resource: repo-master
           passed: [ promote-rc-to-master ]
           trigger: true
         - get: version
@@ -234,7 +234,7 @@ jobs:
       - task: ship-master-prod
         file: repo/ci/tasks/shipit.yml
       - put: repo
-        resource: repo-master-push
+        resource: repo-master
         params:
           repository: repo
           tag: version/version
@@ -251,7 +251,7 @@ jobs:
     disable_manual_trigger: true
     plan:
       - aggregate:
-        - get: repo-master-push
+        - get: repo-master
           trigger: true
           passed: [ ship-master-to-prod ]
         - get: repo-rc
