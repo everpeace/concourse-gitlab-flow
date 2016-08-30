@@ -12,6 +12,6 @@ inputs:
 outputs:
   - name: out
 run:
-  path: sh
+  path: /bin/bash
   args:
     - repo/ci/tasks/merge.sh

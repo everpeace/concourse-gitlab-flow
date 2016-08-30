@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # repo-target: merge target
 # repo: current branch

@@ -7,6 +7,6 @@ image_resource:
 inputs:
   - name: repo
 run:
-  path: sh
+  path: /bin/bash
   args:
     - repo/ci/tasks/unit.sh
