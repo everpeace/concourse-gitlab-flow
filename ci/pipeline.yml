@@ -85,6 +85,13 @@ resources:
       branch: develop
       private_key: {{github-private-key}}
 
+  - name: repo-master-push
+    type: git
+    source:
+      uri: {{github-repo-uri}}
+      branch: master
+      private_key: {{github-private-key}}
+
 jobs:
   # testing pull requests
   - name: test-pull-request
@@ -205,7 +212,8 @@ jobs:
           GIT_EMAIL: {{git-email}}
           GIT_NAME: {{git-name}}
           NO_FF: true
-      - put: repo-master
+      - put: repo-master-push
+        resource: repo-master-push
         params:
           repository: out
 
@@ -216,7 +224,7 @@ jobs:
     plan:
       - aggregate:
         - get: repo
-          resource: repo-master
+          resource: repo-master-push
           passed: [ promote-rc-to-master ]
           trigger: true
         - get: version
@@ -226,7 +234,7 @@ jobs:
       - task: ship-master-prod
         file: repo/ci/tasks/shipit.yml
       - put: repo
-        resource: repo-master
+        resource: repo-master-push
         params:
           repository: repo
           tag: version/version
@@ -243,7 +251,7 @@ jobs:
     disable_manual_trigger: true
     plan:
       - aggregate:
-        - get: repo-master
+        - get: repo-master-push
           trigger: true
           passed: [ ship-master-to-prod ]
         - get: repo-rc
