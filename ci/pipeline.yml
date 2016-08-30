@@ -19,7 +19,6 @@ groups:
     jobs:
       - promote-rc-to-master
       - test-master
-      - tag-master
       - ship-to-prod
       - merge-rc-to-dev
       - patch
@@ -249,45 +248,26 @@ jobs:
       - task: unit-on-master
         file: repo/ci/tasks/unit.yml
 
-  - name: tag-master
+  - name: ship-to-prod
     serial: true
-    serial_groups: [ version ]
+    serial_groups: [ update-version ]
     disable_manual_trigger: true
     plan:
-      - aggregate:
-        - get: repo
-          resource: repo-master
-          passed: [ test-master ]
-          trigger: true
-        - get: version
-          params: { bump: final }
+      - get: repo
+        resource: repo-master
+        passed: [ test-master ]
+        trigger: true
+      - get: version
+        params: { bump: final }
       - put: repo
         resource: repo-master
         params:
           repository: repo
           tag: version/version
-
-  - name: ship-to-prod
-    serial: true
-    serial_groups: [ version ]
-    disable_manual_trigger: true
-    plan:
-      - aggregate:
-        - get: repo
-          resource: repo-master
-          passed: [ tag-master ]
-          trigger: true
-        - get: version
-          params: { bump: final }
-        - get: develop-version
       - task: ship-master-prod
         file: repo/ci/tasks/shipit.yml
       - put: version
         params: { bump: patch, pre: rc }
-      - get: version
-        parms: { pre: beta }
-      - put: develop-version
-        parms: { file: version/version }
 
   - name: merge-rc-to-dev
     serial: true
@@ -313,7 +293,7 @@ jobs:
 # semver control
   - name: patch
     serial: true
-    serial_groups: [ version ]
+    serial_groups: [ update-version ]
     plan:
       - aggregate:
         - get: version
@@ -326,7 +306,7 @@ jobs:
         parms: { file: version/version }
   - name: minor
     serial: true
-    serial_groups: [ version ]
+    serial_groups: [ update-version ]
     plan:
       - aggregate:
         - get: version
@@ -339,7 +319,7 @@ jobs:
         parms: { file: version/version }
   - name: major
     serial: true
-    serial_groups: [ version ]
+    serial_groups: [ update-version ]
     plan:
       - aggregate:
         - get: version
@@ -352,14 +332,14 @@ jobs:
         parms: { file: version/version }
   - name: bump_beta
     serial: true
-    serial_groups: [ version ]
+    serial_groups: [ update-version ]
     plan:
       - get: develop-version
       - put: develop-version
         parms: { pre: beta }
   - name: bump_rc
     serial: true
-    serial_groups: [ version ]
+    serial_groups: [ update-version ]
     plan:
       - get: version
       - put: version
