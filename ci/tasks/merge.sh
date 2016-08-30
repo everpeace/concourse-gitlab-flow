@@ -26,4 +26,10 @@ if [ "$CI_SKIP" = "true" ]; then
   MESSAGE="[ci skip]${MESSAGE}"
 fi
 
-git merge --ff "repo-target/${TARGET_BRANCH}" -m "${MESSAGE}"
+if [ "NO_FF" = "true" ]; then
+  MERGE_MODE="--no-ff"
+else
+  MERGE_MODE="--ff"
+fi
+
+git merge ${MERGE_MODE} "repo-target/${TARGET_BRANCH}" -m "${MESSAGE}"

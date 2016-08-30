@@ -197,6 +197,7 @@ jobs:
         params:
           GIT_EMAIL: {{git-email}}
           GIT_NAME: {{git-name}}
+          NO_FF: true
       - put: repo-master
         params:
           repository: out
