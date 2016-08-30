@@ -112,6 +112,8 @@ jobs:
         file: repo/ci/tasks/unit.yml
 
   - name: ship-develop
+    serial: true
+    serial_groups: [ repo-develop ]
     plan:
       - aggregate:
         - get: repo
@@ -133,6 +135,8 @@ jobs:
 
 
   - name: promote-develop-to-rc
+    serial: true
+    serial_groups: [ repo-rc ]
     plan:
       - aggregate:
         - get: repo-develop
@@ -162,6 +166,8 @@ jobs:
         file: repo/ci/tasks/unit.yml
 
   - name: ship-rc
+    serial: true
+    serial_groups: [ repo-rc ]
     plan:
       - aggregate:
         - get: repo
@@ -180,6 +186,8 @@ jobs:
         params: { pre: rc }
 
   - name: promote-rc-to-master
+    serial: true
+    serial_groups: [ repo-master ]
     plan:
       - aggregate:
         - get: repo-rc
@@ -194,6 +202,8 @@ jobs:
           repository: out
 
   - name: ship-master-to-prod
+    serial: true
+    serial_groups: [ repo-master, develop-version, version ]
     disable_manual_trigger: true
     plan:
       - aggregate:
@@ -220,6 +230,8 @@ jobs:
         parms: { file: version/version }
 
   - name: merge-rc-to-dev
+    serial: true
+    serial_groups: [ repo-develop ]
     disable_manual_trigger: true
     plan:
       - aggregate:
@@ -237,6 +249,8 @@ jobs:
 
 # semver control
   - name: patch
+    serial: true
+    serial_groups: [ develop-version, version ]
     plan:
       - aggregate:
         - get: version
@@ -248,6 +262,8 @@ jobs:
       - put: develop-version
         parms: { file: version/version }
   - name: minor
+    serial: true
+    serial_groups: [ develop-version, version ]
     plan:
       - aggregate:
         - get: version
@@ -259,6 +275,8 @@ jobs:
       - put: develop-version
         parms: { file: version/version }
   - name: major
+    serial: true
+    serial_groups: [ develop-version, version ]
     plan:
       - aggregate:
         - get: version
@@ -270,11 +288,15 @@ jobs:
       - put: develop-version
         parms: { file: version/version }
   - name: bump_beta
+    serial: true
+    serial_groups: [ develop-version ]
     plan:
       - get: develop-version
       - put: develop-version
         parms: { pre: beta }
   - name: bump_rc
+    serial: true
+    serial_groups: [ version ]
     plan:
       - get: version
       - put: version
