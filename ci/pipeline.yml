@@ -138,10 +138,10 @@ jobs:
         - get: repo-develop
         - get: repo-rc
         - get: develop-version
-          param: { bump: final }
+          params: { bump: final }
         - get: version
       - task: merge-develop-to-rc
-        file: repo-rc/ci/tasks/merge-dev-to-rc.yml
+        file: repo-develop/ci/tasks/merge-dev-to-rc.yml
         params:
           GIT_EMAIL: {{git-email}}
           GIT_NAME: {{git-name}}
@@ -229,7 +229,7 @@ jobs:
         - get: repo-rc
         - get: repo-develop
       - task: merge-rc-to-dev
-        file: repo-dev/ci/tasks/merge-rc-to-dev.yml
+        file: repo-rc/ci/tasks/merge-rc-to-dev.yml
         params:
           GIT_EMAIL: {{git-email}}
           GIT_NAME: {{git-name}}
