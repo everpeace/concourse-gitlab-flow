@@ -78,6 +78,13 @@ resources:
       file: version
       initial_version: {{initial-version}}
 
+  - name: repo-develop-push
+    type: git
+    source:
+      uri: {{github-repo-uri}}
+      branch: develop
+      private_key: {{github-private-key}}
+
 jobs:
   # testing pull requests
   - name: test-pull-request
@@ -210,8 +217,8 @@ jobs:
       - aggregate:
         - get: repo
           resource: repo-master
-          trigger: true
           passed: [ promote-rc-to-master ]
+          trigger: true
         - get: version
           params: { bump: final }
       - task: unit-on-master
@@ -247,6 +254,10 @@ jobs:
           GIT_EMAIL: {{git-email}}
           GIT_NAME: {{git-name}}
           CI_SKIP: true
+      - put: repo-develop-push
+        resource: repo-develop-push
+        params:
+          repository: out
 
 # semver control
   - name: patch
