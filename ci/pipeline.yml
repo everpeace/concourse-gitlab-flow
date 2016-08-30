@@ -18,7 +18,9 @@ groups:
   - name: production
     jobs:
       - promote-rc-to-master
-      - ship-master-to-prod
+      - test-master
+      - tag-master
+      - ship-to-prod
       - merge-rc-to-dev
       - patch
       - minor
@@ -86,13 +88,6 @@ resources:
       uri: {{github-repo-uri}}
       branch: develop
       private_key: {{github-private-key}}
-
-  # - name: repo-master-push
-  #   type: git
-  #   source:
-  #     uri: {{github-repo-uri}}
-  #     branch: master
-  #     private_key: {{github-private-key}}
 
 jobs:
   # testing pull requests
@@ -242,27 +237,51 @@ jobs:
         params:
           repository: out
 
-  - name: ship-master-to-prod
+  - name: test-master
     serial: true
-    serial_groups: [ develop-version, version ]
+    disable_manual_trigger: true
+    plan:
+      - get: repo
+        resource: repo-master
+        # comment out next line for support hotfix
+        passed: [ promote-rc-to-master ]
+        trigger: true
+      - task: unit-on-master
+        file: repo/ci/tasks/unit.yml
+
+  - name: tag-master
+    serial: true
+    serial_groups: [ version ]
     disable_manual_trigger: true
     plan:
       - aggregate:
         - get: repo
           resource: repo-master
-          passed: [ promote-rc-to-master ]
+          passed: [ test-master ]
           trigger: true
         - get: version
           params: { bump: final }
-      - task: unit-on-master
-        file: repo/ci/tasks/unit.yml
-      - task: ship-master-prod
-        file: repo/ci/tasks/shipit.yml
       - put: repo
         resource: repo-master
         params:
           repository: repo
           tag: version/version
+
+  - name: ship-to-prod
+    serial: true
+    serial_groups: [ version ]
+    disable_manual_trigger: true
+    plan:
+      - aggregate:
+        - get: repo
+          resource: repo-master
+          passed: [ tag-master ]
+          trigger: true
+        - get: version
+          params: { bump: final }
+        - get: develop-version
+      - task: ship-master-prod
+        file: repo/ci/tasks/shipit.yml
       - put: version
         params: { bump: patch, pre: rc }
       - get: version
@@ -272,13 +291,12 @@ jobs:
 
   - name: merge-rc-to-dev
     serial: true
-    serial_groups: [ repo-develop ]
-    disable_manual_trigger: true
+    # disable_manual_trigger: true
     plan:
       - aggregate:
         - get: repo-master
           trigger: true
-          passed: [ ship-master-to-prod ]
+          passed: [ ship-to-prod ]
         - get: repo-rc
         - get: repo-develop
       - task: merge-rc-to-dev
@@ -295,7 +313,7 @@ jobs:
 # semver control
   - name: patch
     serial: true
-    serial_groups: [ develop-version, version ]
+    serial_groups: [ version ]
     plan:
       - aggregate:
         - get: version
@@ -308,7 +326,7 @@ jobs:
         parms: { file: version/version }
   - name: minor
     serial: true
-    serial_groups: [ develop-version, version ]
+    serial_groups: [ version ]
     plan:
       - aggregate:
         - get: version
@@ -321,7 +339,7 @@ jobs:
         parms: { file: version/version }
   - name: major
     serial: true
-    serial_groups: [ develop-version, version ]
+    serial_groups: [ version ]
     plan:
       - aggregate:
         - get: version
@@ -334,7 +352,7 @@ jobs:
         parms: { file: version/version }
   - name: bump_beta
     serial: true
-    serial_groups: [ develop-version ]
+    serial_groups: [ version ]
     plan:
       - get: develop-version
       - put: develop-version
