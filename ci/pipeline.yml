@@ -138,7 +138,7 @@ jobs:
         - get: repo-develop
         - get: repo-rc
         - get: develop-version
-          params: { bump: final }
+          params: { pre: rc }
         - get: version
       - task: merge-develop-to-rc
         file: repo-develop/ci/tasks/merge-dev-to-rc.yml
@@ -151,7 +151,7 @@ jobs:
       - put: version
         params: { file: develop-version/version }
       - put: develop-version
-        params: { bump: patch, pre: alpha }
+        params: { bump: patch, pre: beta }
 
   - name: test-rc
     plan:
