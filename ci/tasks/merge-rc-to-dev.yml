@@ -1,0 +1,17 @@
+---
+platform: linux
+image_resource:
+  type: docker-image
+  source:
+    repository: concourse/git-resource
+inputs:
+  - name: repo-rc
+    path: repo-target
+  - name: repo-develop
+    path: repo
+outputs:
+  - name: out
+run:
+  path: sh
+  args:
+    - repo/ci/tasks/merge.sh

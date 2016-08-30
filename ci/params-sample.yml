@@ -1,0 +1,15 @@
+github-repo-uri: git@github.com:everpeace/concourse-git-flowish.git
+github-repo-name: everpeace/concourse-git-flowish
+
+github-access-token: xxx
+github-private-key: |
+  xxx
+
+develop-version-branch: develop-version
+develop-initial-version: 0.0.1-beta.1
+
+version-branch: version
+initial-version: 0.0.1-rc.1
+
+git-email: everpeace@gmail.com
+git-name: Shingo Omura
