@@ -14,4 +14,4 @@ outputs:
 run:
   path: /bin/bash
   args:
-    - repo/ci/tasks/merge.sh
+    - repo-target/ci/tasks/merge.sh
