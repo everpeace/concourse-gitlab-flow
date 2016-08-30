@@ -259,7 +259,6 @@ jobs:
         trigger: true
       - get: version
         params: { bump: final }
-      - get: develop-version
       - put: repo
         resource: repo-master
         params:
@@ -269,10 +268,6 @@ jobs:
         file: repo/ci/tasks/shipit.yml
       - put: version
         params: { bump: patch, pre: rc }
-      - get: version
-        parms: { pre: beta }
-      - put: develop-version
-        parms: { file: version/version }
 
   - name: merge-rc-to-dev
     serial: true
