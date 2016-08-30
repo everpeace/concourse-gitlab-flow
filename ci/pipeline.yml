@@ -4,6 +4,7 @@ groups:
       - test-pull-request
       - test-develop
       - ship-develop
+      - integration-develop
       - bump_beta
 
   - name: staging
@@ -11,6 +12,7 @@ groups:
       - promote-develop-to-rc
       - test-rc
       - ship-rc
+      - integration-rc
       - bump_rc
 
   - name: production
@@ -147,6 +149,17 @@ jobs:
         resource: develop-version
         params: { pre: beta }
 
+  - name: integration-develop
+    serial: true
+    plan:
+      - aggregate:
+        - get: repo
+          resource: repo-develop
+          trigger: true
+          passed: [ ship-develop ]
+      - task: integration-test
+        file: repo/ci/tasks/integration.yml
+
 
   - name: promote-develop-to-rc
     serial: true
@@ -198,6 +211,18 @@ jobs:
           tag: version/version
       - put: version
         params: { pre: rc }
+
+  - name: integration-rc
+    serial: true
+    plan:
+      - aggregate:
+        - get: repo
+          resource: repo-rc
+          trigger: true
+          passed: [ ship-rc ]
+      - task: integration-test
+        file: repo/ci/tasks/integration.yml
+
 
   - name: promote-rc-to-master
     serial: true
