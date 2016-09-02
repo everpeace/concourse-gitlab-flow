@@ -121,13 +121,15 @@ jobs:
       - task: unit
         file: repo/ci/tasks/unit.yml
 
-  - name: ship-develop
+  - name: continuously-ship-develop
     serial: true
     serial_groups: [ repo-develop ]
     plan:
       - aggregate:
         - get: repo
           resource: repo-develop
+          trigger: true
+          passed: [ test-develop]
         - get: version
           resource: develop-version
       - task: unit
@@ -143,17 +145,39 @@ jobs:
         resource: develop-version
         params: { pre: beta }
 
-  - name: integration-develop
+  - name: continuously-integrate-develop
     serial: true
     plan:
       - aggregate:
         - get: repo
           resource: repo-develop
           trigger: true
-          passed: [ ship-develop ]
+          passed: [ continuously-ship-develop ]
       - task: integration-test
         file: repo/ci/tasks/integration.yml
 
+  - name: manually-ship-develop
+    serial: true
+    serial_groups: [ repo-develop ]
+    plan:
+      - aggregate:
+        - get: repo
+          resource: repo-develop
+        - get: version
+          resource: develop-version
+      - task: unit
+        file: repo/ci/tasks/unit.yml
+      - task: ship-develop
+        file: repo/ci/tasks/shipit.yml
+
+  - name: manually-integrate-develop
+    serial: true
+    plan:
+      - aggregate:
+        - get: repo
+          resource: repo-develop
+      - task: integration-test
+        file: repo/ci/tasks/integration.yml
 
   - name: promote-develop-to-rc
     serial: true
