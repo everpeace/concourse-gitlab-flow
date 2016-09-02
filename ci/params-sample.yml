@@ -1,5 +1,5 @@
-github-repo-uri: git@github.com:everpeace/concourse-git-flowish.git
-github-repo-name: everpeace/concourse-git-flowish
+github-repo-uri: git@github.com:everpeace/concourse-gitlab-flow.git
+github-repo-name: everpeace/concourse-gitlab-flow
 
 github-access-token: xxx
 github-private-key: |
