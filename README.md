@@ -1,5 +1,5 @@
-# concourse-git-flowish
-concourse pipeline sample of git flow-ish branching model
+# concourse-gitlab-flow
+concourse pipeline sample of [Environment branches with GitLab flow](https://about.gitlab.com/2014/09/29/gitlab-flow/) branching model
 
 ## development jobs
 jobs for develop branch.
