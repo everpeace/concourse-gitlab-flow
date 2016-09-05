@@ -1,0 +1,11 @@
+github-repo-uri: git@github.com:everpeace/concourse-gitlab-flow.git
+github-repo-name: everpeace/concourse-gitlab-flow
+
+github-access-token: xxx
+github-private-key: |
+  xxx
+
+initial-version: 0.0.1-dev.1
+
+git-email: everpeace@gmail.com
+git-name: Shingo Omura

@@ -1,0 +1,425 @@
+groups:
+  - name: staging(master)
+    jobs:
+      - test-pr
+      - test-master
+      - integrate-master
+      - version-master
+      - tag-master
+      - ship-master
+      - patch
+      - minor
+      - major
+      - dev
+
+  - name: pre-production
+    jobs:
+      - merge-master-to-pre-production
+      - start-next-dev
+      - test-pre-production
+      - integrate-pre-production
+      - version-pre-production
+      - tag-pre-production
+      - ship-pre-production
+      - e2e-test-on-pre-production
+      - rc
+
+  - name: production
+    jobs:
+      - e2e-test-on-pre-production
+      - merge-pre-production-to-production
+      - test-production
+      - version-production
+      - tag-production
+      - ship-production
+
+resource_types:
+  - name: pull-request
+    type: docker-image
+    source:
+      repository: jtarchie/pr
+
+resources:
+  - name: repo-master
+    type: git
+    source:
+      uri: {{github-repo-uri}}
+      branch: master
+      private_key: {{github-private-key}}
+
+  - name: repo-pre-production
+    type: git
+    source:
+      uri: {{github-repo-uri}}
+      branch: pre-production
+      private_key: {{github-private-key}}
+
+  - name: repo-production
+    type: git
+    source:
+      uri: {{github-repo-uri}}
+      branch: production
+      private_key: {{github-private-key}}
+
+  - name: pull-request
+    type: pull-request
+    source:
+      access_token: {{github-access-token}}
+      private_key: {{github-private-key}}
+      repo: {{github-repo-name}}
+      every: true
+
+  - name: dev-version
+    type: semver
+    source:
+      driver: git
+      uri: {{github-repo-uri}}
+      branch: version/dev
+      private_key: {{github-private-key}}
+      file: version
+      initial_version: {{initial-version}}
+
+  - name: rc-version
+    type: semver
+    source:
+      driver: git
+      uri: {{github-repo-uri}}
+      branch: version/rc
+      private_key: {{github-private-key}}
+      file: version
+      initial_version: {{initial-version}}
+
+  - name: final-version
+    type: semver
+    source:
+      driver: git
+      uri: {{github-repo-uri}}
+      branch: version/final
+      private_key: {{github-private-key}}
+      file: rc-version
+      initial_version: {{initial-version}}
+
+jobs:
+  - name: test-pr
+    plan:
+    - get: pull-request
+      resource: pull-request
+      version: every
+      trigger: true
+    - put: pull-request
+      params:
+        path: pull-request
+        status: pending
+    - task: test-pull-request
+      file: repo/ci/tasks/unit.yml
+      input_mapping: { repo: pull-request }
+      on_success:
+        put: pull-request
+        params:
+          path: pull-request
+          status: success
+      on_failure:
+        put: pull-request
+        params:
+          path: pull-request
+          status: failure
+
+  - name: test-master
+    plan:
+      - get: master
+        resource: repo-master
+        trigger: true
+      - task: unit
+        file: repo/ci/tasks/unit.yml
+        input_mapping: { repo: master }
+
+  - name: integrate-master
+    serial: true
+    plan:
+      - aggregate:
+        - get: master
+          resource: repo-master
+          trigger: true
+          passed: [ test-master ]
+      - task: integration-test
+        file: repo/ci/tasks/integration.yml
+        input_mapping: {repo: master}
+
+  - name: version-master
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - aggregate:
+        - get: master
+          resource: repo-master
+          trigger: true
+          passed: [ integrate-master ]
+        - get: dev-version
+      - put: dev-version
+        params: { pre: dev }
+
+  - name: tag-master
+    serial: true
+    plan:
+      - aggregate:
+        - get: master
+          resource: repo-master
+        - get: dev-version
+          passed: [ version-master ]
+          trigger: true
+      - put: master
+        resource: repo-master
+        params:
+          repository: pre-master
+          tag: dev-version/version
+
+  - name: ship-master
+    serial: true
+    plan:
+      - aggregate:
+        - get: master
+          resource: repo-master
+          trigger: true
+          passed: [ tag-master ]
+        - get: dev-version
+          passed: [ tag-master ]
+      - task: ship
+        file: repo/ci/tasks/shipit.yml
+        input_mapping: { repo: master, version: dev-version }
+
+  - name: merge-master-to-pre-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: master
+          resource: repo-master
+          passed: [ ship-master ]
+          # Uncomment to support automatic promotion
+          # from master to pre-production
+          # trigger: true
+        - get: pre-production
+          resource: repo-pre-production
+        - get: dev-version
+      - task: merge-pre-production-to-production
+        file: master/ci/tasks/merge-branch.yml
+        input_mapping: { from: master, to: pre-production }
+        output_mapping: { out: next-pre-production }
+        params:
+          GIT_EMAIL: {{git-email}}
+          GIT_NAME: {{git-name}}
+          NO_FF: true
+      - put: pre-production
+        resource: repo-pre-production
+        params:
+          repository: next-pre-production
+      - put: rc-version
+        params: { file: dev-version, pre: rc }
+
+  - name: start-next-dev
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - get: rc-version
+        passed: [ merge-master-to-pre-production ]
+        trigger: true
+      - put: dev-version
+        params: { file: rc/version, bump: patch, pre: dev }
+
+  - name: test-pre-production
+    serial: true
+    plan:
+      - get: pre-production
+        resource: repo-pre-production
+        # Uncomment out next line for disable hotfix
+        # passed: [ merge-master-to-production ]
+        trigger: true
+      - task: unit-on-production
+        file: repo/ci/tasks/unit.yml
+        input_mapping: { repo: pre-production }
+
+  - name: integrate-pre-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: pre-production
+          resource: repo-pre-production
+          trigger: true
+          passed: [ test-pre-production ]
+      - task: integration-test
+        file: repo/ci/tasks/integration.yml
+        input_mapping: {repo: pre-production }
+
+  - name: version-pre-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: pre-production
+          resource: repo-pre-production
+          passed: [ integrate-pre-production ]
+          trigger: true
+        - get: rc-version
+      - put: rc-version
+        params: { pre: rc }
+
+  - name: tag-pre-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: pre-production
+          resource: repo-pre-production
+          passed: [ version-pre-production ]
+          trigger: true
+        - get: rc-version
+          passed: [ version-pre-production ]
+      - put: pre-production
+        resource: repo-pre-production
+        params:
+          repository: pre-production
+          tag: rc-version/version
+
+  - name: ship-pre-production
+    serial: true
+    plan:
+      - get: pre-production
+        resource: repo-pre-production
+        passed: [ tag-pre-production ]
+        #Uncomment this line for CD
+        #trigger: true
+      - get: rc-version
+        passed: [ tag-pre-production ]
+      - task: ship-pre-production
+        file: repo/ci/tasks/shipit.yml
+        input_mapping: { repo: pre-production, version: rc-version }
+
+  - name: e2e-test-on-pre-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: pre-production
+          resource: repo-pre-production
+          trigger: true
+          passed: [ ship-pre-production ]
+      - task: e2e-test
+        file: repo/ci/tasks/e2e.yml
+        input_mapping: { repo: pre-production }
+
+
+  - name: merge-pre-production-to-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: pre-production
+          resource: repo-pre-production
+          passed: [ e2e-test-on-pre-production ]
+          trigger: true
+        - get: production
+          resource: repo-production
+      - task: merge-pre-production-to-production
+        file: master/ci/tasks/merge-branch.yml
+        input_mapping: { from: pre-production, to: production }
+        output_mapping: { out: next-production }
+        params:
+          GIT_EMAIL: {{git-email}}
+          GIT_NAME: {{git-name}}
+          NO_FF: true
+      - put: production
+        resource: repo-production
+        params:
+          repository: next-production
+
+  - name: test-production
+    serial: true
+    plan:
+      - get: production
+        resource: repo-production
+        # comment out next line for support hotfix on production branch
+        passed: [ merge-pre-production-to-production ]
+        trigger: true
+      - task: unit-on-production
+        file: repo/ci/tasks/unit.yml
+        input_mapping: { repo: production }
+
+  - name: version-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: production
+          resource: repo-production
+          passed: [ test-production ]
+          trigger: true
+        - get: rc-version
+          params: { bump: final }
+      - put: final-version
+        params: { file: rc-version/version }
+
+  - name: tag-production
+    serial: true
+    plan:
+      - aggregate:
+        - get: production
+          resource: repo-production
+          passed: [ version-production ]
+          trigger: true
+        - get: final-version
+          passed: [ version-production ]
+      - put: production
+        resource: repo-production
+        params:
+          repository: production
+          tag: final-version/version
+
+  - name: ship-production
+    serial: true
+    plan:
+      - get: production
+        resource: repo-production
+        passed: [ tag-production ]
+        #Uncomment this line for CD
+        #trigger: true
+      - get: final-version
+        passed: [ tag-production ]
+      - task: ship-production
+        file: repo/ci/tasks/shipit.yml
+        input_mapping: { repo: production, version: final-version }
+
+
+# semver control
+  - name: patch
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - get: dev-version
+      - put: dev-version
+        params: { bump: patch, pre: dev }
+
+  - name: minor
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - get: dev-version
+      - put: dev-version
+        params: { bump: minor, pre: dev }
+
+  - name: major
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - get: dev-version
+      - put: dev-version
+        params: { bump: major, pre: dev }
+
+  - name: rc
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - get: rc-version
+      - put: rc-version
+        parms: { pre: rc }
+
+  - name: dev
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - get: dev-version
+      - put: dev-version
+        parms: { pre: dev }
