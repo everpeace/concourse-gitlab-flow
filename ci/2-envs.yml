@@ -262,4 +262,4 @@ jobs:
     plan:
       - get: rc-version
       - put: rc-version
-        parms: { pre: rc }
+        params: { pre: rc }
