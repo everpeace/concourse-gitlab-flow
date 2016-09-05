@@ -200,6 +200,7 @@ jobs:
         - get: pre-production
           resource: repo-pre-production
         - get: dev-version
+          params: { pre: rc }
       - task: merge-pre-production-to-production
         file: master/ci/tasks/merge-branch.yml
         input_mapping: { from: master, to: pre-production }
@@ -213,7 +214,7 @@ jobs:
         params:
           repository: next-pre-production
       - put: rc-version
-        params: { file: dev-version/version, pre: rc }
+        params: { file: dev-version/version }
 
   - name: start-next-dev
     serial: true
@@ -222,8 +223,9 @@ jobs:
       - get: rc-version
         passed: [ merge-master-to-pre-production ]
         trigger: true
+        params: { bump: patch, pre: dev }
       - put: dev-version
-        params: { file: rc/version, bump: patch, pre: dev }
+        params: { file: rc-version/version }
 
   - name: test-pre-production
     serial: true

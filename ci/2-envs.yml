@@ -226,8 +226,9 @@ jobs:
       - get: final-version
         passed: [ tag-production ]
         trigger: true
+        params: { bump: patch, pre: rc }
       - put: rc-version
-        params: { file: final-version/version, bump: patch, pre: rc }
+        params: { file: final-version/version }
 
 
 # semver control
