@@ -1,4 +1,7 @@
 #!/bin/bash
+if [ "$DEBUG" = "true" ]; then
+  set -x
+fi
 
 # repo-target: merge target
 # repo: current branch
