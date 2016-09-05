@@ -201,7 +201,7 @@ jobs:
           resource: repo-pre-production
         - get: dev-version
           params: { pre: rc }
-      - task: merge-pre-production-to-production
+      - task: merge-master-to-pre-production
         file: master/ci/tasks/merge-branch.yml
         input_mapping: { from: master, to: pre-production }
         output_mapping: { out: next-pre-production }
@@ -235,7 +235,7 @@ jobs:
         # Uncomment out next line for disable hotfix
         # passed: [ merge-master-to-production ]
         trigger: true
-      - task: unit-on-production
+      - task: unit
         file: pre-production/ci/tasks/unit.yml
         input_mapping: { repo: pre-production }
 
