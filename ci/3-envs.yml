@@ -213,7 +213,7 @@ jobs:
         params:
           repository: next-pre-production
       - put: rc-version
-        params: { file: dev-version, pre: rc }
+        params: { file: dev-version/version, pre: rc }
 
   - name: start-next-dev
     serial: true
