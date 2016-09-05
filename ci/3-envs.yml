@@ -170,7 +170,7 @@ jobs:
       - put: master
         resource: repo-master
         params:
-          repository: pre-master
+          repository: master
           tag: dev-version/version
 
   - name: ship-master
