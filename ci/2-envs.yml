@@ -81,7 +81,7 @@ jobs:
         path: pull-request
         status: pending
     - task: test-pull-request
-      file: repo/ci/tasks/unit.yml
+      file: pull-request/ci/tasks/unit.yml
       input_mapping: { repo: pull-request }
       on_success:
         put: pull-request
@@ -100,7 +100,7 @@ jobs:
         resource: repo-master
         trigger: true
       - task: unit
-        file: repo/ci/tasks/unit.yml
+        file: master/ci/tasks/unit.yml
         input_mapping: { repo: master }
 
   - name: integrate-master
@@ -112,7 +112,7 @@ jobs:
           trigger: true
           passed: [ test-master ]
       - task: integration-test
-        file: repo/ci/tasks/integration.yml
+        file: master/ci/tasks/integration.yml
         input_mapping: {repo: master}
 
   - name: version-master
@@ -139,7 +139,7 @@ jobs:
         - get: rc-version
           passed: [ version-master ]
       - task: ship
-        file: repo/ci/tasks/shipit.yml
+        file: master/ci/tasks/shipit.yml
         input_mapping: { repo: master, version: rc-version }
 
   - name: merge-master-to-production
@@ -173,7 +173,7 @@ jobs:
         passed: [ merge-master-to-production ]
         trigger: true
       - task: unit-on-production
-        file: repo/ci/tasks/unit.yml
+        file: production/ci/tasks/unit.yml
         input_mapping: { repo: production }
 
   - name: version-production
@@ -216,7 +216,7 @@ jobs:
       - get: final-version
         passed: [ tag-production ]
       - task: ship-production
-        file: repo/ci/tasks/shipit.yml
+        file: production/ci/tasks/shipit.yml
         input_mapping: { repo: production, version: final-version }
 
   - name: start-next-rc

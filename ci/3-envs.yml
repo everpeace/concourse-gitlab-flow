@@ -111,7 +111,7 @@ jobs:
         path: pull-request
         status: pending
     - task: test-pull-request
-      file: repo/ci/tasks/unit.yml
+      file: pull-request/ci/tasks/unit.yml
       input_mapping: { repo: pull-request }
       on_success:
         put: pull-request
@@ -130,7 +130,7 @@ jobs:
         resource: repo-master
         trigger: true
       - task: unit
-        file: repo/ci/tasks/unit.yml
+        file: master/ci/tasks/unit.yml
         input_mapping: { repo: master }
 
   - name: integrate-master
@@ -142,7 +142,7 @@ jobs:
           trigger: true
           passed: [ test-master ]
       - task: integration-test
-        file: repo/ci/tasks/integration.yml
+        file: master/ci/tasks/integration.yml
         input_mapping: {repo: master}
 
   - name: version-master
@@ -184,7 +184,7 @@ jobs:
         - get: dev-version
           passed: [ tag-master ]
       - task: ship
-        file: repo/ci/tasks/shipit.yml
+        file: master/ci/tasks/shipit.yml
         input_mapping: { repo: master, version: dev-version }
 
   - name: merge-master-to-pre-production
@@ -234,7 +234,7 @@ jobs:
         # passed: [ merge-master-to-production ]
         trigger: true
       - task: unit-on-production
-        file: repo/ci/tasks/unit.yml
+        file: pre-production/ci/tasks/unit.yml
         input_mapping: { repo: pre-production }
 
   - name: integrate-pre-production
@@ -246,7 +246,7 @@ jobs:
           trigger: true
           passed: [ test-pre-production ]
       - task: integration-test
-        file: repo/ci/tasks/integration.yml
+        file: pre-production/ci/tasks/integration.yml
         input_mapping: {repo: pre-production }
 
   - name: version-pre-production
@@ -288,7 +288,7 @@ jobs:
       - get: rc-version
         passed: [ tag-pre-production ]
       - task: ship-pre-production
-        file: repo/ci/tasks/shipit.yml
+        file: pre-production/ci/tasks/shipit.yml
         input_mapping: { repo: pre-production, version: rc-version }
 
   - name: e2e-test-on-pre-production
@@ -300,7 +300,7 @@ jobs:
           trigger: true
           passed: [ ship-pre-production ]
       - task: e2e-test
-        file: repo/ci/tasks/e2e.yml
+        file: pre-production/ci/tasks/e2e.yml
         input_mapping: { repo: pre-production }
 
 
@@ -315,7 +315,7 @@ jobs:
         - get: production
           resource: repo-production
       - task: merge-pre-production-to-production
-        file: master/ci/tasks/merge-branch.yml
+        file: pre-production/ci/tasks/merge-branch.yml
         input_mapping: { from: pre-production, to: production }
         output_mapping: { out: next-production }
         params:
@@ -336,7 +336,7 @@ jobs:
         passed: [ merge-pre-production-to-production ]
         trigger: true
       - task: unit-on-production
-        file: repo/ci/tasks/unit.yml
+        file: production/ci/tasks/unit.yml
         input_mapping: { repo: production }
 
   - name: version-production
@@ -379,7 +379,7 @@ jobs:
       - get: final-version
         passed: [ tag-production ]
       - task: ship-production
-        file: repo/ci/tasks/shipit.yml
+        file: production/ci/tasks/shipit.yml
         input_mapping: { repo: production, version: final-version }
 
 
