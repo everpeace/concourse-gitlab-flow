@@ -1,10 +1,11 @@
 groups:
   - name: master
     jobs:
-      - test-pull-request
+      - test-pr
       - test-master
-      - ship-master
       - integrate-master
+      - version-master
+      - ship-master
       - patch
       - minor
       - major
@@ -14,7 +15,10 @@ groups:
     jobs:
       - merge-master-to-production
       - test-production
+      - version-production
+      - tag-production
       - ship-production
+      - start-next-rc
 
 resource_types:
   - name: pull-request
