@@ -1,10 +1,11 @@
 groups:
   - name: master
     jobs:
-      - test-pull-request
+      - test-pr
       - test-master
-      - ship-master
       - integrate-master
+      - version-master
+      - ship-master
       - patch
       - minor
       - major
@@ -14,7 +15,10 @@ groups:
     jobs:
       - merge-master-to-production
       - test-production
+      - version-production
+      - tag-production
       - ship-production
+      - start-next-rc
 
 resource_types:
   - name: pull-request
@@ -66,7 +70,6 @@ resources:
       initial_version: {{initial-version}}
 
 jobs:
-
   - name: test-pr
     plan:
     - get: pull-request
@@ -78,7 +81,7 @@ jobs:
         path: pull-request
         status: pending
     - task: test-pull-request
-      file: repo/ci/tasks/unit.yml
+      file: pull-request/ci/tasks/unit.yml
       input_mapping: { repo: pull-request }
       on_success:
         put: pull-request
@@ -97,7 +100,7 @@ jobs:
         resource: repo-master
         trigger: true
       - task: unit
-        file: repo/ci/tasks/unit.yml
+        file: master/ci/tasks/unit.yml
         input_mapping: { repo: master }
 
   - name: integrate-master
@@ -109,7 +112,7 @@ jobs:
           trigger: true
           passed: [ test-master ]
       - task: integration-test
-        file: repo/ci/tasks/integration.yml
+        file: master/ci/tasks/integration.yml
         input_mapping: {repo: master}
 
   - name: version-master
@@ -136,7 +139,7 @@ jobs:
         - get: rc-version
           passed: [ version-master ]
       - task: ship
-        file: repo/ci/tasks/shipit.yml
+        file: master/ci/tasks/shipit.yml
         input_mapping: { repo: master, version: rc-version }
 
   - name: merge-master-to-production
@@ -166,11 +169,14 @@ jobs:
     plan:
       - get: production
         resource: repo-production
-        # comment out next line for support hotfix
+        # This pipeline assumes upstream-first branching model.
+        # i.e It doesn't support hot fix.
+        #     Please commit on master branch and
+        #     start over from merge-master-to-pre-production.
         passed: [ merge-master-to-production ]
         trigger: true
       - task: unit-on-production
-        file: repo/ci/tasks/unit.yml
+        file: production/ci/tasks/unit.yml
         input_mapping: { repo: production }
 
   - name: version-production
@@ -213,7 +219,7 @@ jobs:
       - get: final-version
         passed: [ tag-production ]
       - task: ship-production
-        file: repo/ci/tasks/shipit.yml
+        file: production/ci/tasks/shipit.yml
         input_mapping: { repo: production, version: final-version }
 
   - name: start-next-rc
@@ -223,20 +229,30 @@ jobs:
       - get: final-version
         passed: [ tag-production ]
         trigger: true
+        params: { bump: patch }
+      # This initializes rc-verison with version
+      # of the form 'x.y.z' temporalily.
+      # However, we can gurantee that tagged versions on master branch
+      # will be of the form 'x.y.z-rc.n' because version-master always
+      # bump with {pre: rc}.
       - put: rc-version
-        params: { file: final-version/version, bump: patch, pre: rc }
+        params: { file: final-version/version }
 
 
 # semver control
+# As start-next-rc job above,
+# these semver controll jobs initialize rc-verison with version
+# of the form 'x.y.z' temporalily.
+# However, we can gurantee that tagged versions on master branch
+# will be of the form 'x.y.z-rc.n' because version-master always
+# bump with {pre: rc}.
   - name: patch
     serial: true
     serial_groups: [ update-version ]
     plan:
       - get: rc-version
       - put: rc-version
-        params: { bump: patch, pre: rc }
-      - get: rc-version
-        parms: { pre: beta }
+        params: { bump: patch }
 
   - name: minor
     serial: true
@@ -244,7 +260,7 @@ jobs:
     plan:
       - get: rc-version
       - put: rc-version
-        params: { bump: minor, pre: rc }
+        params: { bump: minor }
 
   - name: major
     serial: true
@@ -252,7 +268,7 @@ jobs:
     plan:
       - get: rc-version
       - put: rc-version
-        params: { bump: major, pre: rc }
+        params: { bump: major }
 
   - name: rc
     serial: true
@@ -260,4 +276,4 @@ jobs:
     plan:
       - get: rc-version
       - put: rc-version
-        parms: { pre: rc }
+        params: { pre: rc }

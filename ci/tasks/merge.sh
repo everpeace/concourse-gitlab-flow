@@ -1,4 +1,7 @@
 #!/bin/bash
+if [ "$DEBUG" = "true" ]; then
+  set -x
+fi
 
 # repo-target: merge target
 # repo: current branch
@@ -16,7 +19,7 @@ cd out
 shopt -s dotglob
 rm -rf *
 mv -f ../repo/* ./
-git remote add -f repo-target ../repo-target
+GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" git remote add -f repo-target ../repo-target
 
 CURRENT_BRANCH=$(git branch --contains | grep -v '('| sed 's/^\**[[:blank:]]*//g'| head -n 1)
 echo "current branch:${CURRENT_BRANCH}"

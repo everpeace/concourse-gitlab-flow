@@ -5,13 +5,8 @@ image_resource:
   source:
     repository: getourneau/alpine-bash-git
 inputs:
-  - name: repo-rc
-    path: repo-target
-  - name: repo-develop
-    path: repo
-outputs:
-  - name: out
+  - name: repo
 run:
   path: /bin/bash
   args:
-    - repo-target/ci/tasks/merge.sh
+    - repo/ci/tasks/e2e.sh
