@@ -30,7 +30,7 @@ This repository has two concourse pipeline examples supporting two [Gitlab flow]
      * Team can manually bump minor/major version when big changes happened on master branch.
 * tagging commits and actual shipment jobs are separated.  This enables you to ship the latest commit on production branch to production environment __without__ bumping versions.  This would be useful for deployment failure or network issues.
 
-Please note that this pipeline does NOT support hotfix-ing on master branch.  This means you need to commits those fixes to master branch and start over release process.  See [2-envs.yml](ci/2-envs.yml) for implementation details.
+Please note that this pipeline does NOT support hotfix-ing on `production` branch.  This means you need to commits those fixes to master branch and start over release process.  See [2-envs.yml](ci/2-envs.yml) for implementation details.
 
 
 
@@ -70,4 +70,4 @@ In [Environment branches with GitLab flow](http://docs.gitlab.com/ee/workflow/gi
     * If release candidate version was `x.y.z-rc.1`, final version will be `x.y.z`
 * tagging and actual shipment jobs are separated.  This enables you to ship the latest commit on production branch to production environment __without__ bumping versions.  This would be useful for deployment failure or network issues.
 
-Please note that this pipeline does NOT support hotfix-ing on master branch.  This means you need to commits those fixes to master branch and start over release process.  See [3-envs.yml](ci/3-envs.yml) for detailed.
+Please note that this pipeline does NOT support hotfix-ing on `pre-production` and `production` branch.  This means you need to commits those fixes to master branch and start over release process.  See [3-envs.yml](ci/3-envs.yml) for detailed.
