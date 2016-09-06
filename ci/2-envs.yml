@@ -229,19 +229,30 @@ jobs:
       - get: final-version
         passed: [ tag-production ]
         trigger: true
-        params: { bump: patch, pre: rc }
+        params: { bump: patch }
+      # This initializes rc-verison with version
+      # of the form 'x.y.z' temporalily.
+      # However, we can gurantee that tagged versions on master branch
+      # will be of the form 'x.y.z-rc.n' because version-master always
+      # bump with {pre: rc}.
       - put: rc-version
         params: { file: final-version/version }
 
 
 # semver control
+# As start-next-rc job above,
+# these semver controll jobs initialize rc-verison with version
+# of the form 'x.y.z' temporalily.
+# However, we can gurantee that tagged versions on master branch
+# will be of the form 'x.y.z-rc.n' because version-master always
+# bump with {pre: rc}.
   - name: patch
     serial: true
     serial_groups: [ update-version ]
     plan:
       - get: rc-version
       - put: rc-version
-        params: { bump: patch, pre: rc }
+        params: { bump: patch }
 
   - name: minor
     serial: true
@@ -249,7 +260,7 @@ jobs:
     plan:
       - get: rc-version
       - put: rc-version
-        params: { bump: minor, pre: rc }
+        params: { bump: minor }
 
   - name: major
     serial: true
@@ -257,7 +268,7 @@ jobs:
     plan:
       - get: rc-version
       - put: rc-version
-        params: { bump: major, pre: rc }
+        params: { bump: major }
 
   - name: rc
     serial: true

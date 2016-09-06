@@ -276,7 +276,12 @@ jobs:
       - get: rc-version
         passed: [ tag-pre-production ]
         trigger: true
-        params: { bump: patch, pre: dev }
+        params: { bump: patch }
+      # This initializes dev-verison with version
+      # of the form 'x.y.z' temporalily.
+      # However, we can gurantee that tagged versions on master branch
+      # will be of the form 'x.y.z-dev.n' because version-master always
+      # bump with {pre: dev}.
       - put: dev-version
         params: { file: rc-version/version }
 
@@ -390,13 +395,19 @@ jobs:
 
 
 # semver control
+# As start-next-dev job above,
+# these semver controll jobs initialize dev-verison with version
+# of the form 'x.y.z' temporalily.
+# However, we can gurantee that tagged versions on master branch
+# will be of the form 'x.y.z-dev.n' because version-master always
+# bump with {pre: dev}.
   - name: patch
     serial: true
     serial_groups: [ update-version ]
     plan:
       - get: dev-version
       - put: dev-version
-        params: { bump: patch, pre: dev }
+        params: { bump: patch }
 
   - name: minor
     serial: true
@@ -404,7 +415,7 @@ jobs:
     plan:
       - get: dev-version
       - put: dev-version
-        params: { bump: minor, pre: dev }
+        params: { bump: minor }
 
   - name: major
     serial: true
@@ -412,7 +423,7 @@ jobs:
     plan:
       - get: dev-version
       - put: dev-version
-        params: { bump: major, pre: dev }
+        params: { bump: major }
 
   - name: dev
     serial: true
