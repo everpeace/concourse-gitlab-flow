@@ -169,7 +169,10 @@ jobs:
     plan:
       - get: production
         resource: repo-production
-        # comment out next line for support hotfix
+        # This pipeline assumes upstream-first branching model.
+        # i.e It doesn't support hot fix.
+        #     Please commit on master branch and
+        #     start over from merge-master-to-pre-production.
         passed: [ merge-master-to-production ]
         trigger: true
       - task: unit-on-production

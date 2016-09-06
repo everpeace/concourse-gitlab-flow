@@ -22,7 +22,6 @@ groups:
       - tag-pre-production
       - ship-pre-production
       - e2e-test-on-pre-production
-      - rc
 
   - name: production
     jobs:
@@ -213,27 +212,17 @@ jobs:
         resource: repo-pre-production
         params:
           repository: next-pre-production
-      - put: rc-version
-        params: { file: dev-version/version }
-
-  - name: start-next-dev
-    serial: true
-    serial_groups: [ update-version ]
-    plan:
-      - get: rc-version
-        passed: [ merge-master-to-pre-production ]
-        trigger: true
-        params: { bump: patch, pre: dev }
-      - put: dev-version
-        params: { file: rc-version/version }
 
   - name: test-pre-production
     serial: true
     plan:
       - get: pre-production
         resource: repo-pre-production
-        # Uncomment out next line for disable hotfix
-        # passed: [ merge-master-to-production ]
+        # This pipeline assumes upstream-first branching model.
+        # i.e It doesn't support hot fix.
+        #     Please commit on master branch and
+        #     start over from merge-master-to-pre-production.
+        passed: [ merge-master-to-pre-production ]
         trigger: true
       - task: unit
         file: pre-production/ci/tasks/unit.yml
@@ -259,9 +248,10 @@ jobs:
           resource: repo-pre-production
           passed: [ integrate-pre-production ]
           trigger: true
-        - get: rc-version
+        - get: dev-version
+          params: { bump: final, pre: rc }
       - put: rc-version
-        params: { pre: rc }
+        params: { file: dev-version/version }
 
   - name: tag-pre-production
     serial: true
@@ -278,6 +268,17 @@ jobs:
         params:
           repository: pre-production
           tag: rc-version/version
+
+  - name: start-next-dev
+    serial: true
+    serial_groups: [ update-version ]
+    plan:
+      - get: rc-version
+        passed: [ tag-pre-production ]
+        trigger: true
+        params: { bump: patch, pre: dev }
+      - put: dev-version
+        params: { file: rc-version/version }
 
   - name: ship-pre-production
     serial: true
@@ -334,7 +335,10 @@ jobs:
     plan:
       - get: production
         resource: repo-production
-        # comment out next line for support hotfix on production branch
+        # This pipeline assumes upstream-first branching model.
+        # i.e It doesn't support hot fix.
+        #     Please commit on master branch and
+        #     start over from merge-master-to-pre-production.
         passed: [ merge-pre-production-to-production ]
         trigger: true
       - task: unit-on-production
@@ -409,14 +413,6 @@ jobs:
       - get: dev-version
       - put: dev-version
         params: { bump: major, pre: dev }
-
-  - name: rc
-    serial: true
-    serial_groups: [ update-version ]
-    plan:
-      - get: rc-version
-      - put: rc-version
-        params: { pre: rc }
 
   - name: dev
     serial: true
